@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>eNotas — Painel de Operações</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f2f5;color:#333}
+header{background:#1a56db;color:#fff;padding:16px 24px;display:flex;align-items:center;gap:12px}
+header h1{font-size:1.3rem;font-weight:600}
+header span{font-size:.85rem;opacity:.8}
+.container{max-width:1100px;margin:24px auto;padding:0 16px}
+.card{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.1);padding:20px;margin-bottom:20px}
+.card h2{font-size:1rem;font-weight:600;margin-bottom:14px;color:#1a56db;border-bottom:2px solid #e8f0fe;padding-bottom:8px}
+label{display:block;font-size:.82rem;font-weight:600;margin-bottom:4px;color:#555}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:.88rem;margin-bottom:12px;transition:border .2s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#1a56db}
+textarea{resize:vertical;min-height:80px;font-family:monospace;font-size:.8rem}
+.btn{padding:9px 20px;border:none;border-radius:6px;cursor:pointer;font-size:.88rem;font-weight:600;transition:background .2s}
+.btn-primary{background:#1a56db;color:#fff}.btn-primary:hover{background:#1648c0}
+.btn-danger{background:#e02424;color:#fff}.btn-danger:hover{background:#c81e1e}
+.btn-secondary{background:#6b7280;color:#fff}.btn-secondary:hover{background:#4b5563}
+.btn-success{background:#057a55;color:#fff}.btn-success:hover{background:#046c4e}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:20px}
+.tab{padding:9px 18px;border-radius:8px 8px 0 0;cursor:pointer;font-size:.85rem;font-weight:600;background:#e5e7eb;color:#555;border:none;transition:all .2s}
+.tab.active{background:#1a56db;color:#fff}
+.tab-content{display:none}.tab-content.active{display:block}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.response-box{background:#1e1e2e;color:#cdd6f4;border-radius:8px;padding:16px;font-family:monospace;font-size:.8rem;white-space:pre-wrap;word-break:break-all;max-height:400px;overflow-y:auto;margin-top:12px}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:700;margin-right:6px}
+.badge-get{background:#dbeafe;color:#1e40af}
+.badge-post{background:#d1fae5;color:#065f46}
+.badge-delete{background:#fee2e2;color:#991b1b}
+.alert{padding:10px 14px;border-radius:6px;font-size:.85rem;margin-bottom:12px}
+.alert-info{background:#e8f0fe;color:#1a56db;border-left:4px solid #1a56db}
+.alert-warn{background:#fef3c7;color:#92400e;border-left:4px solid #f59e0b}
+.section-title{font-size:.78rem;font-weight:700;text-transform:uppercase;color:#9ca3af;margin:16px 0 8px;letter-spacing:.05em}
+.loading{display:none;color:#1a56db;font-size:.85rem;margin-top:8px}
+.loading.show{display:block}
+@media(max-width:600px){.grid-2,.grid-3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>
+  <div><h1>eNotas — Painel de Operações</h1><span>Interface para analistas N1</span></div>
+</header>
+
+<div class="container">
+
+<!-- API KEY -->
+<div class="card">
+  <h2>🔑 Configuração da API Key</h2>
+  <div class="alert alert-info">Informe sua API Key do eNotas. Ela será usada em todas as requisições desta sessão.</div>
+  <label>API Key (Base64)</label>
+  <div style="display:flex;gap:8px;align-items:flex-start">
+    <input type="password" id="apiKey" placeholder="Cole aqui sua API Key..." autocomplete="off" style="margin-bottom:0">
+    <button class="btn btn-secondary" onclick="toggleApiKey()" style="white-space:nowrap">👁 Mostrar</button>
+  </div>
+</div>
+
+<!-- ABAS -->
+<div class="tabs">
+  <button class="tab active" onclick="showTab('empresas',this)">🏢 Empresas</button>
+  <button class="tab" onclick="showTab('nfse',this)">📄 NFS-e</button>
+  <button class="tab" onclick="showTab('nfe',this)">🧾 NF-e</button>
+  <button class="tab" onclick="showTab('nfce',this)">🛒 NFC-e</button>
+  <button class="tab" onclick="showTab('mei',this)">👤 MEI</button>
+</div>
+
+<!-- ABA EMPRESAS -->
+<div id="tab-empresas" class="tab-content active">
+  <div class="card">
+    <h2><span class="badge badge-get">GET</span> Consultar Empresa pelo ID</h2>
+    <div class="grid-2">
+      <div><label>ID da Empresa (GW)</label><input type="text" id="emp_consultar_id" placeholder="Ex: a2de68a0-2306-49f9-a3c6-03771d3b0600"></div>
+      <div><label>Versão da API</label><select id="emp_consultar_ver"><option value="v1">v1</option><option value="v2" selected>v2</option></select></div>
+    </div>
+    <button class="btn btn-primary" onclick="consultarEmpresa()">🔍 Consultar</button>
+    <div class="loading" id="load_emp_consultar">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_emp_consultar" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-get">GET</span> Listar Empresas</h2>
+    <div class="grid-3">
+      <div><label>Página</label><input type="number" id="emp_list_page" value="0" min="0"></div>
+      <div><label>Itens por página</label><input type="number" id="emp_list_size" value="10" min="1" max="100"></div>
+      <div><label>Buscar por</label><select id="emp_list_searchby"><option value="nome_fantasia">Nome Fantasia</option><option value="razao_social">Razão Social</option></select></div>
+    </div>
+    <label>Termo de busca</label>
+    <input type="text" id="emp_list_term" placeholder="Digite para filtrar...">
+    <button class="btn btn-primary" onclick="listarEmpresas()">🔍 Listar</button>
+    <div class="loading" id="load_emp_list">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_emp_list" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-post">POST</span> Incluir / Alterar Empresa</h2>
+    <div class="alert alert-warn">Preencha apenas os campos necessários. Campos em branco serão enviados como null.</div>
+    <div class="grid-2">
+      <div><label>ID da Empresa (somente para alteração)</label><input type="text" id="emp_inc_id" placeholder="Deixe vazio para incluir nova"></div>
+      <div><label>CNPJ</label><input type="text" id="emp_inc_cnpj" placeholder="99999999999999"></div>
+    </div>
+    <div class="grid-2">
+      <div><label>Razão Social</label><input type="text" id="emp_inc_razao" placeholder="Razão Social"></div>
+      <div><label>Nome Fantasia</label><input type="text" id="emp_inc_fantasia" placeholder="Nome Fantasia"></div>
+    </div>
+    <div class="grid-2">
+      <div><label>E-mail</label><input type="email" id="emp_inc_email" placeholder="email@empresa.com.br"></div>
+      <div><label>Inscrição Municipal</label><input type="text" id="emp_inc_im" placeholder="Inscrição Municipal"></div>
+    </div>
+    <div class="section-title">Endereço</div>
+    <div class="grid-3">
+      <div><label>UF</label><input type="text" id="emp_inc_uf" placeholder="MG" maxlength="2"></div>
+      <div><label>Cidade</label><input type="text" id="emp_inc_cidade" placeholder="Belo Horizonte"></div>
+      <div><label>CEP</label><input type="text" id="emp_inc_cep" placeholder="00000000"></div>
+    </div>
+    <div class="grid-2">
+      <div><label>Logradouro</label><input type="text" id="emp_inc_logradouro" placeholder="Rua Exemplo"></div>
+      <div><label>Número</label><input type="text" id="emp_inc_numero" placeholder="100"></div>
+    </div>
+    <div class="grid-2">
+      <div><label>Bairro</label><input type="text" id="emp_inc_bairro" placeholder="Centro"></div>
+      <div><label>Complemento</label><input type="text" id="emp_inc_complemento" placeholder="Sala 1"></div>
+    </div>
+    <div class="section-title">Configurações Fiscais</div>
+    <div class="grid-3">
+      <div><label>Optante Simples Nacional</label><select id="emp_inc_sn"><option value="true">Sim</option><option value="false">Não</option></select></div>
+      <div><label>Regime Especial Tributação</label><input type="text" id="emp_inc_ret" placeholder="0"></div>
+      <div><label>Alíquota ISS (%)</label><input type="number" id="emp_inc_iss" placeholder="2" step="0.01"></div>
+    </div>
+    <div class="grid-2">
+      <div><label>Código Serviço Municipal</label><input type="text" id="emp_inc_csm" placeholder="4219"></div>
+      <div><label>Descrição do Serviço</label><input type="text" id="emp_inc_desc_serv" placeholder="Descrição padrão do serviço"></div>
+    </div>
+    <button class="btn btn-success" onclick="incluirEmpresa()">💾 Salvar Empresa</button>
+    <div class="loading" id="load_emp_inc">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_emp_inc" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-post">POST</span> Habilitar / Desabilitar Empresa</h2>
+    <label>ID da Empresa</label>
+    <input type="text" id="emp_hd_id" placeholder="ID da empresa">
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-success" onclick="habilitarEmpresa('habilitar')">✅ Habilitar</button>
+      <button class="btn btn-danger" onclick="habilitarEmpresa('desabilitar')">🚫 Desabilitar</button>
+    </div>
+    <div class="loading" id="load_emp_hd">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_emp_hd" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-get">GET</span> Criticar Dados Obrigatórios da Empresa</h2>
+    <div class="alert alert-info">Use este endpoint para descobrir o que está faltando na configuração da empresa antes de emitir notas.</div>
+    <label>ID da Empresa</label>
+    <input type="text" id="criticar_emp_id" placeholder="ID da empresa no GW">
+    <button class="btn btn-primary" onclick="criticarDados()">🔎 Verificar Dados Obrigatórios</button>
+    <div class="loading" id="load_criticar">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_criticar" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-get">GET</span> Consultar Serviços Municipais da Prefeitura</h2>
+    <div class="grid-2">
+      <div><label>UF</label><input type="text" id="serv_uf" placeholder="SP" maxlength="2"></div>
+      <div><label>Cidade</label><input type="text" id="serv_cidade" placeholder="São Paulo"></div>
+    </div>
+    <div class="grid-2">
+      <div><label>Filtro (descrição)</label><input type="text" id="serv_filtro" placeholder="consultoria"></div>
+      <div><label>Itens por página</label><input type="number" id="serv_size" value="10" min="1"></div>
+    </div>
+    <button class="btn btn-primary" onclick="consultarServicos()">🔍 Consultar</button>
+    <div class="loading" id="load_serv">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_serv" style="display:none"></div>
+  </div>
+</div>
+<!-- FIM ABA EMPRESAS -->
+
+<!-- ABA NFS-e -->
+<div id="tab-nfse" class="tab-content">
+  <div class="card">
+    <h2><span class="badge badge-post">POST</span> Emitir NFS-e</h2>
+    <div class="alert alert-info">Preencha os dados da nota fiscal de serviço.</div>
+    <div class="grid-2">
+      <div><label>ID da Empresa *</label><input type="text" id="nfse_emp_id" placeholder="ID da empresa no GW"></div>
+      <div><label>Ambiente *</label><select id="nfse_ambiente"><option value="Homologacao">Homologação (Teste)</option><option value="Producao">Produção</option></select></div>
+    </div>
+    <div class="grid-2">
+      <div><label>Número RPS</label><input type="number" id="nfse_rps" placeholder="999"></div>
+    </div>
+    <div><label>ID Externo (seu identificador)</label><input type="text" id="nfse_id_ext" placeholder="Deixe vazio para gerar automaticamente"></div>
+    <div class="section-title">Dados do Cliente</div>
+    <div class="grid-2">
+      <div><label>Nome do Cliente *</label><input type="text" id="nfse_cli_nome" placeholder="Nome completo ou Razão Social"></div>
+      <div><label>CPF / CNPJ *</label><input type="text" id="nfse_cli_doc" placeholder="Somente números"></div>
+    </div>
+    <div class="grid-2">
+      <div><label>E-mail do Cliente</label><input type="email" id="nfse_cli_email" placeholder="cliente@email.com"></div>
+      <div><label>Tipo de Pessoa</label><select id="nfse_cli_tipo"><option value="">Selecione</option><option value="F">Física</option><option value="J">Jurídica</option></select></div>
+    </div>
+    <div class="grid-3">
+      <div><label>UF</label><input type="text" id="nfse_cli_uf" placeholder="MG" maxlength="2"></div>
+      <div><label>Cidade</label><input type="text" id="nfse_cli_cidade" placeholder="Belo Horizonte"></div>
+      <div><label>CEP</label><input type="text" id="nfse_cli_cep" placeholder="00000000"></div>
+    </div>
+    <div class="grid-2">
+      <div><label>Logradouro</label><input type="text" id="nfse_cli_logr" placeholder="Rua Exemplo"></div>
+      <div><label>Número</label><input type="text" id="nfse_cli_num" placeholder="100"></div>
+    </div>
+    <div class="grid-2">
+      <div><label>Bairro</label><input type="text" id="nfse_cli_bairro" placeholder="Centro"></div>
+      <div><label>Complemento</label><input type="text" id="nfse_cli_comp" placeholder="Sala 1"></div>
+    </div>
+    <div class="section-title">Dados do Serviço</div>
+    <label>Descrição do Serviço *</label>
+    <textarea id="nfse_serv_desc" placeholder="Descreva o serviço prestado..."></textarea>
+    <div class="grid-3">
+      <div><label>Valor Total (R$) *</label><input type="number" id="nfse_valor" placeholder="100.00" step="0.01"></div>
+      <div><label>Alíquota ISS (%)</label><input type="number" id="nfse_iss" placeholder="0" step="0.01"></div>
+      <div><label>ISS Retido na Fonte</label><select id="nfse_iss_ret"><option value="false">Não</option><option value="true">Sim</option></select></div>
+    </div>
+    <div class="grid-2">
+      <div><label>Código Serviço Município</label><input type="text" id="nfse_cod_serv" placeholder="Ex: 4219"></div>
+      <div><label>Item Lista Serviço LC116</label><input type="text" id="nfse_lc116" placeholder="Ex: 17.01"></div>
+    </div>
+    <div><label>Enviar por e-mail ao cliente</label><select id="nfse_email_cli" style="width:auto"><option value="false">Não</option><option value="true">Sim</option></select></div>
+    <br>
+    <button class="btn btn-success" onclick="emitirNFSe()">📤 Emitir NFS-e</button>
+    <div class="loading" id="load_nfse_emit">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_nfse_emit" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-get">GET</span> Consultar NFS-e</h2>
+    <div class="grid-2">
+      <div><label>ID da Empresa</label><input type="text" id="nfse_cons_emp" placeholder="ID da empresa"></div>
+      <div><label>Buscar por</label><select id="nfse_cons_tipo"><option value="gw">ID do GW</option><option value="externo">ID Externo</option></select></div>
+    </div>
+    <label>ID da Nota</label>
+    <input type="text" id="nfse_cons_id" placeholder="ID da nota fiscal">
+    <button class="btn btn-primary" onclick="consultarNFSe()">🔍 Consultar</button>
+    <div class="loading" id="load_nfse_cons">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_nfse_cons" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-get">GET</span> Listar Notas por Empresa</h2>
+    <div class="grid-2">
+      <div><label>ID da Empresa</label><input type="text" id="nfse_list_emp" placeholder="ID da empresa"></div>
+      <div><label>Status</label><select id="nfse_list_status"><option value="autorizada">Autorizada</option><option value="cancelada">Cancelada</option><option value="">Todos</option></select></div>
+    </div>
+    <div class="grid-2">
+      <div><label>Página</label><input type="number" id="nfse_list_page" value="0" min="0"></div>
+      <div><label>Itens por página</label><input type="number" id="nfse_list_size" value="10" min="1" max="100"></div>
+    </div>
+    <button class="btn btn-primary" onclick="listarNFSe()">🔍 Listar</button>
+    <div class="loading" id="load_nfse_list">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_nfse_list" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-get">GET</span> Download PDF / XML</h2>
+    <div class="grid-2">
+      <div><label>ID da Empresa</label><input type="text" id="nfse_dl_emp" placeholder="ID da empresa"></div>
+      <div><label>Tipo de ID</label><select id="nfse_dl_tipo"><option value="gw">ID do GW</option><option value="externo">ID Externo</option></select></div>
+    </div>
+    <label>ID da Nota</label>
+    <input type="text" id="nfse_dl_id" placeholder="ID da nota">
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary" onclick="downloadNFSe('pdf')">📥 Baixar PDF</button>
+      <button class="btn btn-secondary" onclick="downloadNFSe('xml')">📥 Baixar XML</button>
+    </div>
+    <div class="loading" id="load_nfse_dl">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_nfse_dl" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-delete">DELETE</span> Cancelar NFS-e</h2>
+    <div class="grid-2">
+      <div><label>ID da Empresa</label><input type="text" id="nfse_cancel_emp" placeholder="ID da empresa"></div>
+      <div><label>Tipo de ID</label><select id="nfse_cancel_tipo"><option value="gw">ID do GW</option><option value="externo">ID Externo</option></select></div>
+    </div>
+    <label>ID da Nota</label>
+    <input type="text" id="nfse_cancel_id" placeholder="ID da nota a cancelar">
+    <button class="btn btn-danger" onclick="cancelarNFSe()">🗑 Cancelar Nota</button>
+    <div class="loading" id="load_nfse_cancel">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_nfse_cancel" style="display:none"></div>
+  </div>
+</div>
+<!-- FIM ABA NFS-e -->
+
+<!-- ABA NF-e -->
+<div id="tab-nfe" class="tab-content">
+  <div class="card">
+    <h2><span class="badge badge-get">GET</span> Consultar NF-e pelo ID</h2>
+    <div class="grid-2">
+      <div><label>ID da Empresa</label><input type="text" id="nfe_cons_emp" placeholder="ID da empresa"></div>
+      <div><label>ID da NF-e (GW)</label><input type="text" id="nfe_cons_id" placeholder="ID da nota"></div>
+    </div>
+    <button class="btn btn-primary" onclick="consultarNFe()">🔍 Consultar</button>
+    <div class="loading" id="load_nfe_cons">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_nfe_cons" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-get">GET</span> Listar NF-e por Empresa</h2>
+    <div class="grid-2">
+      <div><label>ID da Empresa</label><input type="text" id="nfe_list_emp" placeholder="ID da empresa"></div>
+      <div><label>Status</label><select id="nfe_list_status"><option value="autorizada">Autorizada</option><option value="cancelada">Cancelada</option><option value="">Todos</option></select></div>
+    </div>
+    <div class="grid-2">
+      <div><label>Página</label><input type="number" id="nfe_list_page" value="0" min="0"></div>
+      <div><label>Itens por página</label><input type="number" id="nfe_list_size" value="10" min="1" max="100"></div>
+    </div>
+    <button class="btn btn-primary" onclick="listarNFe()">🔍 Listar</button>
+    <div class="loading" id="load_nfe_list">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_nfe_list" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-get">GET</span> Download PDF / XML (NF-e)</h2>
+    <div class="grid-2">
+      <div><label>ID da Empresa</label><input type="text" id="nfe_dl_emp" placeholder="ID da empresa"></div>
+      <div><label>Tipo de ID</label><select id="nfe_dl_tipo"><option value="gw">ID do GW</option><option value="externo">ID Externo</option></select></div>
+    </div>
+    <label>ID da Nota</label>
+    <input type="text" id="nfe_dl_id" placeholder="ID da nota">
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary" onclick="downloadNFe('pdf')">📥 Baixar PDF</button>
+      <button class="btn btn-secondary" onclick="downloadNFe('xml')">📥 Baixar XML</button>
+    </div>
+    <div class="loading" id="load_nfe_dl">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_nfe_dl" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-delete">DELETE</span> Cancelar NF-e pelo ID Externo</h2>
+    <div class="grid-2">
+      <div><label>ID da Empresa</label><input type="text" id="nfe_cancel_emp" placeholder="ID da empresa"></div>
+      <div><label>ID Externo da Nota</label><input type="text" id="nfe_cancel_id" placeholder="ID externo"></div>
+    </div>
+    <button class="btn btn-danger" onclick="cancelarNFe()">🗑 Cancelar NF-e</button>
+    <div class="loading" id="load_nfe_cancel">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_nfe_cancel" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-post">POST</span> Inutilizar NF-e</h2>
+    <div class="alert alert-warn">Use apenas quando houver quebra na sequência de numeração.</div>
+    <div class="grid-2">
+      <div><label>ID da Empresa</label><input type="text" id="inut_emp_id" placeholder="ID da empresa"></div>
+      <div><label>Ambiente</label><select id="inut_ambiente"><option value="Producao">Produção</option><option value="Homologacao">Homologação</option></select></div>
+    </div>
+    <div class="grid-3">
+      <div><label>ID da Inutilização</label><input type="text" id="inut_id" placeholder="Ex: inut-377-_nfe"></div>
+      <div><label>Série</label><input type="text" id="inut_serie" placeholder="1"></div>
+      <div><label>Número Inicial</label><input type="number" id="inut_num_ini" placeholder="100"></div>
+    </div>
+    <div class="grid-2">
+      <div><label>Número Final</label><input type="number" id="inut_num_fim" placeholder="100"></div>
+      <div><label>Justificativa</label><input type="text" id="inut_just" placeholder="Quebra na sequência da numeração"></div>
+    </div>
+    <button class="btn btn-danger" onclick="inutilizarNFe()">⚠️ Inutilizar</button>
+    <div class="loading" id="load_inut">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_inut" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-get">GET</span> Consultar Inutilização NF-e</h2>
+    <div class="grid-2">
+      <div><label>ID da Empresa</label><input type="text" id="inut_cons_emp" placeholder="ID da empresa"></div>
+      <div><label>ID da Inutilização</label><input type="text" id="inut_cons_id" placeholder="Ex: inut-377-_nfe"></div>
+    </div>
+    <button class="btn btn-primary" onclick="consultarInutilizacao()">🔍 Consultar</button>
+    <div class="loading" id="load_inut_cons">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_inut_cons" style="display:none"></div>
+  </div>
+</div>
+<!-- FIM ABA NF-e -->
+
+<!-- ABA NFC-e -->
+<div id="tab-nfce" class="tab-content">
+  <div class="card">
+    <h2><span class="badge badge-post">POST</span> Emitir NFC-e</h2>
+    <div class="grid-2">
+      <div><label>ID da Empresa *</label><input type="text" id="nfce_emp_id" placeholder="ID da empresa no GW"></div>
+      <div><label>Ambiente *</label><select id="nfce_ambiente"><option value="Homologacao">Homologação (Teste)</option><option value="Producao">Produção</option></select></div>
+    </div>
+    <label>ID da Nota (seu identificador)</label>
+    <input type="text" id="nfce_id" placeholder="Ex: pedido-001">
+    <div class="section-title">Dados do Cliente (opcional)</div>
+    <div class="grid-2">
+      <div><label>Nome do Cliente</label><input type="text" id="nfce_cli_nome" placeholder="Nome do cliente"></div>
+      <div><label>CPF / CNPJ</label><input type="text" id="nfce_cli_doc" placeholder="Somente números"></div>
+    </div>
+    <div class="section-title">Pagamento</div>
+    <div class="grid-2">
+      <div><label>Tipo de Pagamento</label><select id="nfce_pag_tipo"><option value="PagamentoAVista">À Vista</option><option value="PagamentoAPrazo">A Prazo</option></select></div>
+      <div><label>Forma de Pagamento</label><select id="nfce_pag_forma"><option value="Dinheiro">Dinheiro</option><option value="CartaoCredito">Cartão de Crédito</option><option value="CartaoDebito">Cartão de Débito</option><option value="Pix">PIX</option><option value="Boleto">Boleto</option></select></div>
+    </div>
+    <label>Valor Total (R$) *</label>
+    <input type="number" id="nfce_valor" placeholder="10.00" step="0.01">
+    <div class="section-title">Presença do Consumidor</div>
+    <select id="nfce_presenca"><option value="OperacaoPelaInternet">Operação pela Internet</option><option value="PresencialBalcao">Presencial no Balcão</option><option value="EntregaDomicilio">Entrega em Domicílio</option></select>
+    <div class="section-title">Item da Nota</div>
+    <div class="grid-2">
+      <div><label>Código do Produto</label><input type="text" id="nfce_item_cod" placeholder="01"></div>
+      <div><label>Descrição do Produto</label><input type="text" id="nfce_item_desc" placeholder="Nome do produto"></div>
+    </div>
+    <div class="grid-3">
+      <div><label>NCM</label><input type="text" id="nfce_item_ncm" placeholder="21069090"></div>
+      <div><label>CFOP</label><input type="text" id="nfce_item_cfop" placeholder="5101"></div>
+      <div><label>Unidade</label><input type="text" id="nfce_item_un" placeholder="UN"></div>
+    </div>
+    <div class="grid-2">
+      <div><label>Quantidade</label><input type="number" id="nfce_item_qtd" placeholder="1" step="0.001"></div>
+      <div><label>Valor Unitário (R$)</label><input type="number" id="nfce_item_vl" placeholder="10.00" step="0.01"></div>
+    </div>
+    <button class="btn btn-success" onclick="emitirNFCe()">📤 Emitir NFC-e</button>
+    <div class="loading" id="load_nfce_emit">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_nfce_emit" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-get">GET</span> Consultar NFC-e pelo ID do GW</h2>
+    <div class="grid-2">
+      <div><label>ID da Empresa</label><input type="text" id="nfce_cons_emp" placeholder="ID da empresa"></div>
+      <div><label>ID da NFC-e</label><input type="text" id="nfce_cons_id" placeholder="ID da nota"></div>
+    </div>
+    <button class="btn btn-primary" onclick="consultarNFCe()">🔍 Consultar</button>
+    <div class="loading" id="load_nfce_cons">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_nfce_cons" style="display:none"></div>
+  </div>
+</div>
+<!-- FIM ABA NFC-e -->
+
+<!-- ABA MEI -->
+<div id="tab-mei" class="tab-content">
+  <div class="card">
+    <h2><span class="badge badge-get">GET</span> Consultar Empresa MEI pelo ID</h2>
+    <label>ID da Empresa</label>
+    <input type="text" id="mei_cons_id" placeholder="ID da empresa no GW">
+    <button class="btn btn-primary" onclick="consultarEmpresaMEI()">🔍 Consultar</button>
+    <div class="loading" id="load_mei_cons">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_mei_cons" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-post">POST</span> Alterar Campo MEI da Empresa</h2>
+    <div class="alert alert-warn">Altera o parâmetro MEI e configurações tributárias de uma empresa já cadastrada.</div>
+    <div class="grid-2">
+      <div><label>ID da Empresa *</label><input type="text" id="mei_alt_id" placeholder="ID da empresa no GW"></div>
+      <div><label>Regime Especial Tributação</label><input type="text" id="mei_alt_ret" placeholder="Código do regime"></div>
+    </div>
+    <div class="grid-2">
+      <div><label>MEI</label><select id="mei_alt_mei"><option value="true">Sim (MEI)</option><option value="false">Não</option></select></div>
+      <div><label>Regime Apuração Tributos SN</label><input type="text" id="mei_alt_sn" placeholder="Código do regime de apuração"></div>
+    </div>
+    <div class="section-title">Percentuais de Tributos</div>
+    <div class="grid-3">
+      <div><label>% Federal</label><input type="number" id="mei_pct_fed" value="0" step="0.01"></div>
+      <div><label>% Estadual</label><input type="number" id="mei_pct_est" value="0" step="0.01"></div>
+      <div><label>% Municipal</label><input type="number" id="mei_pct_mun" value="0" step="0.01"></div>
+    </div>
+    <button class="btn btn-success" onclick="alterarMEI()">💾 Salvar Alteração MEI</button>
+    <div class="loading" id="load_mei_alt">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_mei_alt" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-post">POST</span> Incluir / Atualizar Empresa MEI (Portal)</h2>
+    <div class="grid-2">
+      <div><label>ID da Empresa *</label><input type="text" id="mei_portal_id" placeholder="ID GW da empresa"></div>
+      <div><label>Série NF</label><input type="text" id="mei_portal_serie" placeholder="80000"></div>
+    </div>
+    <div class="grid-2">
+      <div><label>Sequencial NF</label><input type="number" id="mei_portal_seq" value="1"></div>
+      <div><label>Usuário Provedor</label><input type="text" id="mei_portal_user" placeholder="Usuário de acesso ao provedor"></div>
+    </div>
+    <label>Senha Provedor</label>
+    <input type="password" id="mei_portal_senha" placeholder="Senha de acesso ao provedor">
+    <button class="btn btn-success" onclick="salvarEmpresaMEI()">💾 Salvar</button>
+    <div class="loading" id="load_mei_portal">⏳ Aguardando resposta...</div>
+    <div class="response-box" id="resp_mei_portal" style="display:none"></div>
+  </div>
+</div>
+<!-- FIM ABA MEI -->
+
+</div><!-- /container -->
+
+<script>
+// ── Proxy CORS ────────────────────────────────────────────────────────────────
+const CORS_PREFIX = 'https://postman-front.calais-rafael.workers.dev/?url=';
+
+function proxify(url) {
+  return CORS_PREFIX + encodeURIComponent(url);
+}
+
+// ── Utilitários ───────────────────────────────────────────────────────────────
+function getApiKey() {
+  const k = document.getElementById('apiKey').value.trim();
+  if (!k) { alert('Informe a API Key antes de continuar.'); return null; }
+  return k;
+}
+function v(id) { return document.getElementById(id).value.trim(); }
+
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function toggleApiKey() {
+  const el = document.getElementById('apiKey');
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+function showResp(id, data, httpCode) {
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  const ok    = httpCode >= 200 && httpCode < 300;
+  const color = ok ? '#a6e3a1' : '#f38ba8';
+  const label = ok ? '✅ Sucesso' : '❌ Erro';
+  el.innerHTML = `<span style="color:${color};font-weight:700">HTTP ${httpCode} — ${label}</span>\n\n` +
+    JSON.stringify(data, null, 2);
+}
+
+function showLoad(id, show) {
+  const el = document.getElementById(id);
+  if (el) el.className = 'loading' + (show ? ' show' : '');
+}
+
+async function callApi(loadId, respId, url, method, body) {
+  const apiKey = getApiKey();
+  if (!apiKey) return;
+  showLoad(loadId, true);
+  document.getElementById(respId).style.display = 'none';
+
+  const opts = {
+    method,
+    headers: {
+      'Authorization': 'Basic ' + apiKey,
+      'Accept': 'application/json',
+    }
+  };
+  if (body && (method === 'POST' || method === 'PUT')) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+
+  try {
+    const res  = await fetch(proxify(url), opts);
+    const ct   = res.headers.get('content-type') || '';
+    showLoad(loadId, false);
+
+    if (ct.includes('pdf') || ct.includes('xml')) {
+      const blob    = await res.blob();
+      const ext     = ct.includes('pdf') ? 'pdf' : 'xml';
+      const objUrl  = URL.createObjectURL(blob);
+      const el      = document.getElementById(respId);
+      el.style.display = 'block';
+      el.innerHTML  = `<span style="color:#a6e3a1;font-weight:700">HTTP ${res.status} — ✅ Arquivo pronto</span>\n\n` +
+        `<a href="${objUrl}" download="nota.${ext}" style="color:#89b4fa">📥 Clique aqui para baixar o ${ext.toUpperCase()}</a>`;
+      return;
+    }
+
+    let data;
+    try { data = await res.json(); } catch(e) { data = await res.text(); }
+    showResp(respId, data, res.status);
+  } catch (e) {
+    showLoad(loadId, false);
+    showResp(respId, { erro: e.message, dica: 'Verifique sua conexão ou se a API Key está correta.' }, 0);
+  }
+}
+
+// ── EMPRESAS ──────────────────────────────────────────────────────────────────
+function consultarEmpresa() {
+  const id = v('emp_consultar_id'), ver = v('emp_consultar_ver');
+  if (!id) { alert('Informe o ID da empresa.'); return; }
+  callApi('load_emp_consultar','resp_emp_consultar',
+    `https://api-emissor.enotasgw.com.br/${ver}/empresas/${id}`, 'GET');
+}
+function listarEmpresas() {
+  const page = v('emp_list_page')||'0', size = v('emp_list_size')||'10';
+  const by = v('emp_list_searchby'), term = v('emp_list_term');
+  callApi('load_emp_list','resp_emp_list',
+    `https://api-emissor.enotasgw.com.br/v2/empresas?pageNumber=${page}&pageSize=${size}&searchBy=${by}&searchTerm=${encodeURIComponent(term)}&sortBy=nome_fantasia&sortDirection=asc`, 'GET');
+}
+function incluirEmpresa() {
+  const body = {
+    id: v('emp_inc_id')||null, cnpj: v('emp_inc_cnpj')||null,
+    razaoSocial: v('emp_inc_razao')||null, nomeFantasia: v('emp_inc_fantasia')||null,
+    email: v('emp_inc_email')||null, inscricaoMunicipal: v('emp_inc_im')||null,
+    optanteSimplesNacional: v('emp_inc_sn')==='true',
+    regimeEspecialTributacao: v('emp_inc_ret')||null,
+    aliquotaIss: parseFloat(v('emp_inc_iss'))||0,
+    codigoServicoMunicipal: v('emp_inc_csm')||null,
+    descricaoServico: v('emp_inc_desc_serv')||null,
+    endereco: { uf: v('emp_inc_uf')||null, cidade: v('emp_inc_cidade')||null,
+      cep: v('emp_inc_cep')||null, logradouro: v('emp_inc_logradouro')||null,
+      numero: v('emp_inc_numero')||null, bairro: v('emp_inc_bairro')||null,
+      complemento: v('emp_inc_complemento')||null }
+  };
+  callApi('load_emp_inc','resp_emp_inc','https://api-emissor.enotasgw.com.br/v1/empresas','POST',body);
+}
+function habilitarEmpresa(acao) {
+  const id = v('emp_hd_id');
+  if (!id) { alert('Informe o ID da empresa.'); return; }
+  callApi('load_emp_hd','resp_emp_hd',
+    `https://api-emissor.enotasgw.com.br/v1/empresas/${id}/${acao}`,'POST');
+}
+function criticarDados() {
+  const id = v('criticar_emp_id');
+  if (!id) { alert('Informe o ID da empresa.'); return; }
+  callApi('load_criticar','resp_criticar',
+    `https://api-emissor.enotasgw.com.br/v1/empresas/${id}/criticardadosobrigatorios`,'GET');
+}
+function consultarServicos() {
+  const uf = v('serv_uf'), cidade = v('serv_cidade'), filtro = v('serv_filtro'), size = v('serv_size')||'10';
+  if (!uf||!cidade) { alert('Informe UF e Cidade.'); return; }
+  let url = `https://api-emissor.enotasgw.com.br/v1/estados/${encodeURIComponent(uf)}/cidades/${encodeURIComponent(cidade)}/servicos?pageNumber=0&pageSize=${size}`;
+  if (filtro) url += `&filter=contains(descricao,'${encodeURIComponent(filtro)}')`;
+  callApi('load_serv','resp_serv', url,'GET');
+}
+
+// ── NFS-e ─────────────────────────────────────────────────────────────────────
+function emitirNFSe() {
+  const emp = v('nfse_emp_id');
+  if (!emp) { alert('Informe o ID da empresa.'); return; }
+  const body = {
+    ambienteEmissao: v('nfse_ambiente'), idExterno: v('nfse_id_ext')||null,
+    numeroRps: parseInt(v('nfse_rps'))||null, serieRps:'E', tipo:'NFS-e',
+    enviarPorEmail: v('nfse_email_cli')==='true',
+    valorTotal: parseFloat(v('nfse_valor'))||0,
+    cliente: { nome: v('nfse_cli_nome')||null, cpfCnpj: v('nfse_cli_doc')||null,
+      email: v('nfse_cli_email')||null, tipoPessoa: v('nfse_cli_tipo')||null,
+      endereco: { uf: v('nfse_cli_uf')||null, cidade: v('nfse_cli_cidade')||null,
+        cep: v('nfse_cli_cep')||null, logradouro: v('nfse_cli_logr')||null,
+        numero: v('nfse_cli_num')||null, bairro: v('nfse_cli_bairro')||null,
+        complemento: v('nfse_cli_comp')||null }},
+    servico: { descricao: v('nfse_serv_desc')||null,
+      aliquotaIss: parseFloat(v('nfse_iss'))||0,
+      issRetidoFonte: v('nfse_iss_ret')==='true',
+      codigoServicoMunicipio: v('nfse_cod_serv')||null,
+      itemListaServicoLC116: v('nfse_lc116')||null }
+  };
+  callApi('load_nfse_emit','resp_nfse_emit',
+    `https://api-emissor.enotasgw.com.br/v1/empresas/${emp}/nfes`,'POST',body);
+}
+function consultarNFSe() {
+  const emp = v('nfse_cons_emp'), id = v('nfse_cons_id'), tipo = v('nfse_cons_tipo');
+  if (!emp||!id) { alert('Preencha os campos.'); return; }
+  const url = tipo==='externo'
+    ? `https://api-emissor.enotasgw.com.br/v1/empresas/${emp}/nfes/porIdExterno/${id}`
+    : `https://api-emissor.enotasgw.com.br/v1/empresas/${emp}/nfes/${id}`;
+  callApi('load_nfse_cons','resp_nfse_cons', url,'GET');
+}
+function listarNFSe() {
+  const emp = v('nfse_list_emp'), status = v('nfse_list_status');
+  const page = v('nfse_list_page')||'0', size = v('nfse_list_size')||'10';
+  if (!emp) { alert('Informe o ID da empresa.'); return; }
+  let url = `https://api-emissor.enotasgw.com.br/v1/empresas/${emp}/nfes?pageNumber=${page}&pageSize=${size}&sortBy=datacriacao&sortDirection=asc`;
+  if (status) url += `&filter=status eq '${status}'`;
+  callApi('load_nfse_list','resp_nfse_list', url,'GET');
+}
+function downloadNFSe(tipo) {
+  const emp = v('nfse_dl_emp'), id = v('nfse_dl_id'), idTipo = v('nfse_dl_tipo');
+  if (!emp||!id) { alert('Preencha os campos.'); return; }
+  const base = idTipo==='externo'
+    ? `https://api-emissor.enotasgw.com.br/v1/empresas/${emp}/nfes/porIdExterno/${id}`
+    : `https://api-emissor.enotasgw.com.br/v1/empresas/${emp}/nfes/${id}`;
+  callApi('load_nfse_dl','resp_nfse_dl',`${base}/${tipo}`,'GET');
+}
+function cancelarNFSe() {
+  const emp = v('nfse_cancel_emp'), id = v('nfse_cancel_id'), tipo = v('nfse_cancel_tipo');
+  if (!emp||!id) { alert('Preencha os campos.'); return; }
+  if (!confirm('Confirma o cancelamento desta nota fiscal?')) return;
+  const url = tipo==='externo'
+    ? `https://api-emissor.enotasgw.com.br/v1/empresas/${emp}/nfes/porIdExterno/${id}`
+    : `https://api-emissor.enotasgw.com.br/v1/empresas/${emp}/nfes/${id}`;
+  callApi('load_nfse_cancel','resp_nfse_cancel', url,'DELETE');
+}
+
+// ── NF-e ──────────────────────────────────────────────────────────────────────
+function consultarNFe() {
+  const emp = v('nfe_cons_emp'), id = v('nfe_cons_id');
+  if (!emp||!id) { alert('Preencha os campos.'); return; }
+  callApi('load_nfe_cons','resp_nfe_cons',`https://api-emissor.enotasgw.com.br/v2/empresas/${emp}/nf-e/${id}`,'GET');
+}
+function listarNFe() {
+  const emp = v('nfe_list_emp'), status = v('nfe_list_status');
+  const page = v('nfe_list_page')||'0', size = v('nfe_list_size')||'10';
+  if (!emp) { alert('Informe o ID da empresa.'); return; }
+  let url = `https://api-emissor.enotasgw.com.br/v2/empresas/${emp}/nfes?pageNumber=${page}&pageSize=${size}&sortBy=datacriacao&sortDirection=asc`;
+  if (status) url += `&filter=status eq '${status}'`;
+  callApi('load_nfe_list','resp_nfe_list', url,'GET');
+}
+function downloadNFe(tipo) {
+  const emp = v('nfe_dl_emp'), id = v('nfe_dl_id'), idTipo = v('nfe_dl_tipo');
+  if (!emp||!id) { alert('Preencha os campos.'); return; }
+  const base = idTipo==='externo'
+    ? `https://api-emissor.enotasgw.com.br/v2/empresas/${emp}/nfes/porIdExterno/${id}`
+    : `https://api-emissor.enotasgw.com.br/v2/empresas/${emp}/nfes/${id}`;
+  callApi('load_nfe_dl','resp_nfe_dl',`${base}/${tipo}`,'GET');
+}
+function cancelarNFe() {
+  const emp = v('nfe_cancel_emp'), id = v('nfe_cancel_id');
+  if (!emp||!id) { alert('Preencha os campos.'); return; }
+  if (!confirm('Confirma o cancelamento desta NF-e?')) return;
+  callApi('load_nfe_cancel','resp_nfe_cancel',
+    `https://api-emissor.enotasgw.com.br/v2/empresas/${emp}/nf-e/${id}`,'DELETE');
+}
+function inutilizarNFe() {
+  const emp = v('inut_emp_id');
+  if (!emp) { alert('Informe o ID da empresa.'); return; }
+  if (!confirm('Confirma a inutilização? Esta ação não pode ser desfeita.')) return;
+  const body = { id: v('inut_id')||null, ambienteEmissao: v('inut_ambiente'),
+    serie: v('inut_serie')||'1', numeroInicial: parseInt(v('inut_num_ini'))||0,
+    numeroFinal: parseInt(v('inut_num_fim'))||0, justificativa: v('inut_just')||null };
+  callApi('load_inut','resp_inut',
+    `https://api-emissor.enotasgw.com.br/v2/empresas/${emp}/nf-e/inutilizacao`,'POST',body);
+}
+function consultarInutilizacao() {
+  const emp = v('inut_cons_emp'), id = v('inut_cons_id');
+  if (!emp||!id) { alert('Preencha os campos.'); return; }
+  callApi('load_inut_cons','resp_inut_cons',
+    `https://api-emissor.enotasgw.com.br/v2/empresas/${emp}/nf-e/inutilizacao/${id}`,'GET');
+}
+
+// ── NFC-e ─────────────────────────────────────────────────────────────────────
+function emitirNFCe() {
+  const emp = v('nfce_emp_id');
+  if (!emp) { alert('Informe o ID da empresa.'); return; }
+  const valor = parseFloat(v('nfce_valor'))||0;
+  const body = {
+    id: v('nfce_id')||null, ambienteEmissao: v('nfce_ambiente'), enviarPorEmail: false,
+    cliente: { nome: v('nfce_cli_nome')||null, cpfCnpj: v('nfce_cli_doc')||null },
+    pedido: { presencaConsumidor: v('nfce_presenca'),
+      pagamento: { tipo: v('nfce_pag_tipo'), formas: [{ tipo: v('nfce_pag_forma'), valor }] }},
+    itens: [{ cfop: v('nfce_item_cfop')||'5101', codigo: v('nfce_item_cod')||'01',
+      descricao: v('nfce_item_desc')||'Produto', ncm: v('nfce_item_ncm')||'00000000',
+      quantidade: parseFloat(v('nfce_item_qtd'))||1, unidadeMedida: v('nfce_item_un')||'UN',
+      valorUnitario: parseFloat(v('nfce_item_vl'))||valor, descontos: 0,
+      impostos: { icms: { situacaoTributaria:'102', origem:'0' },
+        pis: { situacaoTributaria:'08' }, cofins: { situacaoTributaria:'08' }}}]
+  };
+  callApi('load_nfce_emit','resp_nfce_emit',
+    `https://api-emissor.enotasgw.com.br/v2/empresas/${emp}/nfc-e`,'POST',body);
+}
+function consultarNFCe() {
+  const emp = v('nfce_cons_emp'), id = v('nfce_cons_id');
+  if (!emp||!id) { alert('Preencha os campos.'); return; }
+  callApi('load_nfce_cons','resp_nfce_cons',
+    `https://api-emissor.enotasgw.com.br/v2/empresas/${emp}/nfc-e/${id}`,'GET');
+}
+
+// ── MEI ───────────────────────────────────────────────────────────────────────
+function consultarEmpresaMEI() {
+  const id = v('mei_cons_id');
+  if (!id) { alert('Informe o ID da empresa.'); return; }
+  callApi('load_mei_cons','resp_mei_cons',
+    `https://api-emissor.enotasgw.com.br/v1/empresas/${id}`,'GET');
+}
+function alterarMEI() {
+  const id = v('mei_alt_id');
+  if (!id) { alert('Informe o ID da empresa.'); return; }
+  const body = { id, regimeEspecialTributacao: v('mei_alt_ret')||null,
+    mei: v('mei_alt_mei')==='true',
+    metadados: { regimeApuracaoTributosSN: v('mei_alt_sn')||null,
+      valorPercentualTributosFederal: {
+        PercentualTotalFederal: parseFloat(v('mei_pct_fed'))||0,
+        PercentualTotalEstadual: parseFloat(v('mei_pct_est'))||0,
+        PercentualTotalMunicipal: parseFloat(v('mei_pct_mun'))||0 }}};
+  callApi('load_mei_alt','resp_mei_alt','https://api-emissor.enotasgw.com.br/v1/empresas','POST',body);
+}
+function salvarEmpresaMEI() {
+  const id = v('mei_portal_id');
+  if (!id) { alert('Informe o ID da empresa.'); return; }
+  const body = { id, mei: true, configuracoesNFSeProducao: {
+    sequencialNFe: parseInt(v('mei_portal_seq'))||1,
+    serieNFe: v('mei_portal_serie')||'80000',
+    usuarioAcessoProvedor: v('mei_portal_user')||null,
+    senhaAcessoProvedor: v('mei_portal_senha')||null }};
+  callApi('load_mei_portal','resp_mei_portal','https://api-emissor.enotasgw.com.br/v1/empresas','POST',body);
+}
+</script>
+</body>
+</html>
